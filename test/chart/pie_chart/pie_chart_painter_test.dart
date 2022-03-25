@@ -347,29 +347,6 @@ void main() {
     });
   });
 
-  group('createRectPathAroundLine()', () {
-    test('test 1', () {
-      final PieChartPainter barChartPainter = PieChartPainter();
-      final path0 = barChartPainter.createRectPathAroundLine(
-          Line(const Offset(0, 0), const Offset(10, 0)), 4);
-      final path0Length = path0
-          .computeMetrics()
-          .toList()
-          .map((e) => e.length)
-          .reduce((a, b) => a + b);
-      expect(path0Length, 32.0);
-
-      final path1 = barChartPainter.createRectPathAroundLine(
-          Line(const Offset(32, 11), const Offset(12, 5)), 66);
-      final path1Length = path1
-          .computeMetrics()
-          .toList()
-          .map((e) => e.length)
-          .reduce((a, b) => a + b);
-      expect(path1Length, 239.76123046875);
-    });
-  });
-
   group('drawSection()', () {
     test('test 1', () {
       const viewSize = Size(200, 200);

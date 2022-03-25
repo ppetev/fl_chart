@@ -131,92 +131,63 @@ class PieChartPainter extends BaseChartPainter<PieChartData> {
       radius: centerRadius,
     );
 
-    final startRadians = Utils().radians(tempAngle);
-    final sweepRadians = Utils().radians(sectionDegree);
-    final endRadians = startRadians + sweepRadians;
+    final outerRadius = centerRadius + section.radius;
 
-    final startLineDirection =
-        Offset(math.cos(startRadians), math.sin(startRadians));
+    final sectionSpaceInnerRadians = sectionSpace == 0.0
+        ? 0.0
+        : math.acos(
+            (centerRadius * centerRadius * 2 - sectionSpace * sectionSpace) /
+                (centerRadius * centerRadius * 2));
 
-    final startLineFrom = center + startLineDirection * centerRadius;
-    final startLineTo = startLineFrom + startLineDirection * section.radius;
+    final sectionSpaceOuterRadians = sectionSpace == 0.0
+        ? 0.0
+        : math.acos(
+            (outerRadius * outerRadius * 2 - sectionSpace * sectionSpace) /
+                (outerRadius * outerRadius * 2));
+
+    final innerStartRadians =
+        Utils().radians(tempAngle) + sectionSpaceInnerRadians / 2.0;
+
+    final innerSweepRadians =
+        Utils().radians(sectionDegree) - sectionSpaceInnerRadians;
+
+    final outerStartRadians =
+        Utils().radians(tempAngle) + sectionSpaceOuterRadians / 2.0;
+
+    final outerSweepRadians =
+        Utils().radians(sectionDegree) - sectionSpaceOuterRadians;
+
+    if (innerSweepRadians <= 0.0 || outerSweepRadians <= 0.0) return Path();
+
+    final innerEndRadians = innerStartRadians + innerSweepRadians;
+    final outerEndRadians = outerStartRadians + outerSweepRadians;
+
+    final startLineFrom = center +
+        Offset(math.cos(innerStartRadians), math.sin(innerStartRadians)) *
+            centerRadius;
+    final startLineTo = center +
+        Offset(math.cos(outerStartRadians), math.sin(outerStartRadians)) *
+            outerRadius;
     final startLine = Line(startLineFrom, startLineTo);
 
-    final endLineDirection = Offset(math.cos(endRadians), math.sin(endRadians));
-
-    final endLineFrom = center + endLineDirection * centerRadius;
-    final endLineTo = endLineFrom + endLineDirection * section.radius;
+    final endLineFrom = center +
+        Offset(math.cos(innerEndRadians), math.sin(innerEndRadians)) *
+            centerRadius;
+    final endLineTo = endLineFrom +
+        Offset(math.cos(outerEndRadians), math.sin(outerEndRadians)) *
+            outerRadius;
     final endLine = Line(endLineFrom, endLineTo);
 
     var sectionPath = Path()
       ..moveTo(startLine.from.dx, startLine.from.dy)
       ..lineTo(startLine.to.dx, startLine.to.dy)
-      ..arcTo(sectionRadiusRect, startRadians, sweepRadians, false)
+      ..arcTo(sectionRadiusRect, outerStartRadians, outerSweepRadians, false)
       ..lineTo(endLine.from.dx, endLine.from.dy)
-      ..arcTo(centerRadiusRect, endRadians, -sweepRadians, false)
+      ..arcTo(centerRadiusRect, innerEndRadians, -innerSweepRadians, false)
       ..moveTo(startLine.from.dx, startLine.from.dy)
       ..close();
 
-    /// Subtract section space from the sectionPath
-    if (sectionSpace != 0) {
-      final startLineSeparatorPath = createRectPathAroundLine(
-          Line(startLineFrom, startLineTo), sectionSpace);
-      sectionPath = Path.combine(
-          PathOperation.difference, sectionPath, startLineSeparatorPath);
-
-      final endLineSeparatorPath =
-          createRectPathAroundLine(Line(endLineFrom, endLineTo), sectionSpace);
-      sectionPath = Path.combine(
-          PathOperation.difference, sectionPath, endLineSeparatorPath);
-    }
-
     return sectionPath;
-  }
-
-  /// Creates a rect around a narrow line
-  @visibleForTesting
-  Path createRectPathAroundLine(Line line, double width) {
-    width = width / 2;
-    final normalized = line.normalize();
-
-    final verticalAngle = line.direction() + (math.pi / 2);
-    final verticalDirection =
-        Offset(math.cos(verticalAngle), math.sin(verticalAngle));
-
-    final startPoint1 = Offset(
-      line.from.dx -
-          (normalized * (width / 2)).dx -
-          (verticalDirection * width).dx,
-      line.from.dy -
-          (normalized * (width / 2)).dy -
-          (verticalDirection * width).dy,
-    );
-
-    final startPoint2 = Offset(
-      line.to.dx +
-          (normalized * (width / 2)).dx -
-          (verticalDirection * width).dx,
-      line.to.dy +
-          (normalized * (width / 2)).dy -
-          (verticalDirection * width).dy,
-    );
-
-    final startPoint3 = Offset(
-      startPoint2.dx + (verticalDirection * (width * 2)).dx,
-      startPoint2.dy + (verticalDirection * (width * 2)).dy,
-    );
-
-    final startPoint4 = Offset(
-      startPoint1.dx + (verticalDirection * (width * 2)).dx,
-      startPoint1.dy + (verticalDirection * (width * 2)).dy,
-    );
-
-    return Path()
-      ..moveTo(startPoint1.dx, startPoint1.dy)
-      ..lineTo(startPoint2.dx, startPoint2.dy)
-      ..lineTo(startPoint3.dx, startPoint3.dy)
-      ..lineTo(startPoint4.dx, startPoint4.dy)
-      ..lineTo(startPoint1.dx, startPoint1.dy);
   }
 
   @visibleForTesting
